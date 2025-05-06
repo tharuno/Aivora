@@ -11,7 +11,7 @@ class GeminiClient:
     
     def __init__(self):
         # In a real implementation, we would get the API key from environment variables
-        self.api_key = os.getenv("GEMINI_API_KEY", "default_key")
+        self.api_key = os.getenv("GEMINI_API_KEY")
         logger.debug("GeminiClient initialized")
     
     def analyze_video(self, video_url):
