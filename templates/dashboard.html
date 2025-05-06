@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Aivora{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="dashboard-title animate-on-scroll" data-animation="fadeIn">Welcome, {{ current_user.username }}</h1>
+    <p class="dashboard-subtitle animate-on-scroll" data-animation="fadeIn">Submit a video URL for fraud detection analysis</p>
+</div>
+
+<div class="row">
+    <!-- URL Submission Form -->
+    <div class="col-lg-8 mb-4 animate-on-scroll" data-animation="slideUp">
+        <div class="card url-form-card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-link me-2"></i>Submit a Video URL</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('video_bp.dashboard') }}" class="needs-validation" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="form-group mb-4">
+                        <label for="video_url" class="form-label">Video URL</label>
+                        <div class="input-group">
+                            {{ form.video_url(class="form-control", placeholder="Enter YouTube, Vimeo, Facebook or Instagram video URL") }}
+                            {{ form.submit(class="btn btn-primary", id="submit-btn") }}
+                        </div>
+                        <div class="invalid-feedback">
+                            Please enter a valid video URL from a supported platform.
+                        </div>
+                        <small class="form-text text-muted mt-2">
+                            <i class="fas fa-info-circle me-1"></i> Supported platforms: YouTube, Vimeo, Facebook, Instagram
+                        </small>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="col-lg-4 mb-4 animate-on-scroll" data-animation="slideUp">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Your Stats</h4>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="mb-0">Total Analyses</h5>
+                    </div>
+                    <div class="badge bg-primary rounded-pill fs-6">{{ recent_analyses|length }}</div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="mb-0">Completed</h5>
+                    </div>
+                    <div class="badge bg-success rounded-pill fs-6">
+                        {{ recent_analyses|selectattr('status', 'equalto', 'completed')|list|length }}
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">In Progress</h5>
+                    </div>
+                    <div class="badge bg-info rounded-pill fs-6">
+                        {{ recent_analyses|selectattr('status', 'in', ['pending', 'processing'])|list|length }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Analyses -->
+<div class="row animate-on-scroll" data-animation="fadeIn">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="fas fa-history me-2"></i>Recent Analyses</h4>
+                <a href="{{ url_for('video_bp.history') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_analyses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Video URL</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for analysis in recent_analyses %}
+                                <tr>
+                                    <td class="text-truncate" style="max-width: 300px;">
+                                        {{ analysis.video_url }}
+                                    </td>
+                                    <td>{{ analysis.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        {% if analysis.status == 'pending' %}
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        {% elif analysis.status == 'processing' %}
+                                            <span class="badge bg-info">Processing</span>
+                                        {% elif analysis.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif analysis.status == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if analysis.status in ['pending', 'processing'] %}
+                                            <a href="{{ url_for('video_bp.analyzing', analysis_id=analysis.id) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-spinner me-1"></i> View
+                                            </a>
+                                        {% elif analysis.status in ['completed', 'failed'] %}
+                                            <a href="{{ url_for('video_bp.results', analysis_id=analysis.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye me-1"></i> Results
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x mb-3 text-muted"></i>
+                        <h4>No analyses yet</h4>
+                        <p class="text-muted">Submit a video URL above to start your first analysis.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

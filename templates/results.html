@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Results - Aivora{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="dashboard-title">Analysis Results</h1>
+    <p class="dashboard-subtitle">Detailed fraud detection report</p>
+</div>
+
+<!-- Overview Card -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4 animate-on-scroll" data-animation="fadeIn">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="fas fa-file-alt me-2"></i>Analysis Overview</h4>
+                <div>
+                    {% if analysis.status == 'completed' %}
+                        <span class="badge bg-success me-2">Completed</span>
+                    {% elif analysis.status == 'failed' %}
+                        <span class="badge bg-danger me-2">Failed</span>
+                    {% endif %}
+                    <span class="text-muted">{{ analysis.completed_at.strftime('%Y-%m-%d %H:%M') if analysis.completed_at else '' }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5 class="mb-3">Video Information</h5>
+                        <div class="video-details">
+                            <div class="video-detail-item">
+                                <i class="fas fa-link"></i>
+                                <span class="video-detail-label">URL:</span>
+                                <span>{{ analysis.video_url }}</span>
+                            </div>
+                            
+                            <div class="video-detail-item">
+                                <i class="fas fa-file-video"></i>
+                                <span class="video-detail-label">Format:</span>
+                                <span>{{ analysis.video_format or 'N/A' }}</span>
+                            </div>
+                            
+                            <div class="video-detail-item">
+                                <i class="fas fa-users"></i>
+                                <span class="video-detail-label">Subscribers:</span>
+                                <span>{{ '{:,}'.format(analysis.subscribers) if analysis.subscribers else 'N/A' }}</span>
+                            </div>
+                            
+                            <div class="video-detail-item">
+                                <i class="fas fa-eye"></i>
+                                <span class="video-detail-label">Views:</span>
+                                <span>{{ '{:,}'.format(analysis.views) if analysis.views else 'N/A' }}</span>
+                            </div>
+                            
+                            <div class="video-detail-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span class="video-detail-label">Published:</span>
+                                <span>{{ analysis.published_date.strftime('%Y-%m-%d') if analysis.published_date else 'N/A' }}</span>
+                            </div>
+                            
+                            <div class="video-detail-item">
+                                <i class="fas fa-clock"></i>
+                                <span class="video-detail-label">Analyzed on:</span>
+                                <span>{{ analysis.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="fraud-score text-center mb-3">
+                            <h2 class="fraud-score-text">{{ (analysis.fraud_score * 100)|int }}%</h2>
+                            <div class="score-label">Fraud Score</div>
+                            <div class="fraud-score-indicator text-white mt-2">
+                                {% if analysis.fraud_score < 0.3 %}
+                                    Low Risk
+                                {% elif analysis.fraud_score < 0.7 %}
+                                    Medium Risk
+                                {% else %}
+                                    High Risk
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('video_bp.dashboard') }}" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-1"></i> Analyze Another Video
+                            </a>
+                            <a href="{{ url_for('video_bp.history') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-history me-1"></i> View History
+                            </a>
+                            {% if analysis.status == 'completed' %}
+                            <a href="{{ url_for('video_bp.download_report', analysis_id=analysis.id) }}" class="btn btn-success">
+                                <i class="fas fa-file-pdf me-1"></i> Download PDF Report
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fraud Score Gauge & Summary -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card animate-on-scroll" data-animation="slideUp">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Fraud Detection Results</h4>
+            </div>
+            <div class="card-body">
+                <!-- Fraud Score Gauge -->
+                <div class="chart-container mb-4">
+                    <canvas id="fraud-score-gauge" data-score="{{ analysis.fraud_score }}"></canvas>
+                </div>
+                
+                <!-- Confidence chart -->
+                <div class="chart-container mb-4">
+                    <canvas id="confidence-chart" data-confidence="{{ analysis.confidence }}" data-score="{{ analysis.fraud_score }}"></canvas>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <div class="text-center">
+                        <h5>Fraud Score</h5>
+                        <h3 class="text-primary">{{ (analysis.fraud_score * 100)|int }}%</h3>
+                    </div>
+                    <div class="text-center">
+                        <h5>Confidence</h5>
+                        <h3 class="text-primary">{{ (analysis.confidence * 100)|int }}%</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card animate-on-scroll" data-animation="slideUp">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Analysis Summary</h4>
+            </div>
+            <div class="card-body">
+                <div class="summary-container p-3 border rounded mb-4">
+                    <p class="summary-text">{{ analysis.summary }}</p>
+                </div>
+                
+                <div class="recommendation-container">
+                    <h5 class="mb-3">Recommendations</h5>
+                    <ul class="recommendation-list">
+                        {% if analysis.fraud_score < 0.3 %}
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> Content appears legitimate with low risk of deception</li>
+                            <li class="mb-2"><i class="fas fa-info-circle text-primary me-2"></i> Continue normal engagement with this content</li>
+                            <li class="mb-2"><i class="fas fa-shield-alt text-primary me-2"></i> Standard caution is appropriate</li>
+                        {% elif analysis.fraud_score < 0.7 %}
+                            <li class="mb-2"><i class="fas fa-exclamation-triangle text-warning me-2"></i> Approach this content with caution</li>
+                            <li class="mb-2"><i class="fas fa-search text-primary me-2"></i> Verify claims through secondary sources</li>
+                            <li class="mb-2"><i class="fas fa-eye text-primary me-2"></i> Pay attention to the specific markers in the timeline</li>
+                        {% else %}
+                            <li class="mb-2"><i class="fas fa-exclamation-circle text-danger me-2"></i> High probability of deceptive content</li>
+                            <li class="mb-2"><i class="fas fa-ban text-danger me-2"></i> Not recommended for informational purposes</li>
+                            <li class="mb-2"><i class="fas fa-search-plus text-primary me-2"></i> Seek verified alternative sources</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timeline Analysis -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card animate-on-scroll" data-animation="fadeIn">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-clock me-2"></i>Timeline Analysis</h4>
+            </div>
+            <div class="card-body">
+                <!-- Timeline Chart -->
+                <div class="chart-container mb-4">
+                    <canvas id="timeline-chart" data-timeline='{{ analysis.timeline_analysis }}'></canvas>
+                </div>
+                
+                <!-- Timeline Events -->
+                <div class="timeline-container">
+                    <h5 class="mb-3">Detected Events</h5>
+                    
+                    {% if analysis.get_timeline_analysis() %}
+                        {% for event in analysis.get_timeline_analysis() %}
+                            <div class="timeline-event severity-{{ event.severity }}">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="timestamp">{{ event.timestamp_formatted }}</span>
+                                    <span class="badge bg-{{ 'warning' if event.severity == 'low' else 'info' if event.severity == 'medium' else 'danger' }}">
+                                        {{ event.severity|capitalize }} Severity
+                                    </span>
+                                </div>
+                                <div class="event-description">
+                                    <p class="mb-1">{{ event.description }}</p>
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">Confidence:</span>
+                                        <div class="progress flex-grow-1" style="height: 8px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ event.confidence * 100 }}%;"
+                                                 aria-valuenow="{{ event.confidence * 100 }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100"></div>
+                                        </div>
+                                        <span class="ms-2">{{ (event.confidence * 100)|int }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-clock fa-3x mb-3 text-muted"></i>
+                            <h5>No timeline events detected</h5>
+                            <p class="text-muted">No specific fraudulent patterns were identified at particular timestamps.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('video_bp.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+            </a>
+            <div>
+                {% if analysis.status == 'completed' %}
+                <a href="{{ url_for('video_bp.download_report', analysis_id=analysis.id) }}" class="btn btn-success me-2">
+                    <i class="fas fa-file-pdf me-1"></i> Download PDF Report
+                </a>
+                {% endif %}
+                <a href="{{ url_for('video_bp.dashboard') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-1"></i> New Analysis
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize charts
+        initializeFraudScoreGauge();
+        initializeTimelineChart();
+        initializeConfidenceChart();
+    });
+</script>
+{% endblock %}

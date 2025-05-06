@@ -1,0 +1,9 @@
+Flask==2.3.3
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-WTF==1.1.1
+WTForms==3.1.1
+Werkzeug==2.3.7
+reportlab==4.0.8
+gunicorn==21.2.0  # if deploying with Gunicorn
+requests==2.31.0  # in case your GeminiClient uses requests

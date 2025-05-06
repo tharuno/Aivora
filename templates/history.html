@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis History - Aivora{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="dashboard-title">Analysis History</h1>
+    <p class="dashboard-subtitle">View all your previous video analyses</p>
+</div>
+
+<div class="row">
+    <!-- History Chart -->
+    <div class="col-12 mb-4">
+        <div class="card animate-on-scroll" data-animation="fadeIn">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>Analysis Trends</h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="history-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="col-12 mb-4">
+        <div class="card animate-on-scroll" data-animation="slideUp">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Results</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="status-filter" class="form-label">Status</label>
+                        <select class="form-select" id="status-filter">
+                            <option value="all" selected>All Statuses</option>
+                            <option value="completed">Completed</option>
+                            <option value="processing">Processing</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="date-filter" class="form-label">Date Range</label>
+                        <select class="form-select" id="date-filter">
+                            <option value="all" selected>All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="sort-filter" class="form-label">Sort By</label>
+                        <select class="form-select" id="sort-filter">
+                            <option value="newest" selected>Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="highest">Highest Fraud Score</option>
+                            <option value="lowest">Lowest Fraud Score</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Analysis History Table -->
+    <div class="col-12">
+        <div class="card animate-on-scroll" data-animation="fadeIn">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-history me-2"></i>Analysis History</h4>
+            </div>
+            <div class="card-body">
+                {% if analyses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Video URL</th>
+                                    <th>Status</th>
+                                    <th>Fraud Score</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body">
+                                {% for analysis in analyses %}
+                                <tr class="analysis-row" 
+                                    data-status="{{ analysis.status }}" 
+                                    data-date="{{ analysis.created_at.strftime('%Y-%m-%d') }}"
+                                    data-score="{{ analysis.fraud_score if analysis.fraud_score else 0 }}">
+                                    <td>{{ analysis.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td class="text-truncate" style="max-width: 300px;">
+                                        {{ analysis.video_url }}
+                                    </td>
+                                    <td>
+                                        {% if analysis.status == 'pending' %}
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        {% elif analysis.status == 'processing' %}
+                                            <span class="badge bg-info">Processing</span>
+                                        {% elif analysis.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif analysis.status == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if analysis.fraud_score is not none and analysis.status == 'completed' %}
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                    <div class="progress-bar 
+                                                        {% if analysis.fraud_score < 0.3 %}bg-success
+                                                        {% elif analysis.fraud_score < 0.7 %}bg-warning
+                                                        {% else %}bg-danger{% endif %}"
+                                                        role="progressbar" 
+                                                        style="width: {{ analysis.fraud_score * 100 }}%;" 
+                                                        aria-valuenow="{{ analysis.fraud_score * 100 }}" 
+                                                        aria-valuemin="0" 
+                                                        aria-valuemax="100"></div>
+                                                </div>
+                                                <span>{{ (analysis.fraud_score * 100)|int }}%</span>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if analysis.status in ['pending', 'processing'] %}
+                                            <a href="{{ url_for('video_bp.analyzing', analysis_id=analysis.id) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-spinner me-1"></i> View
+                                            </a>
+                                        {% elif analysis.status in ['completed', 'failed'] %}
+                                            <div class="btn-group">
+                                                <a href="{{ url_for('video_bp.results', analysis_id=analysis.id) }}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye me-1"></i> Results
+                                                </a>
+                                                {% if analysis.status == 'completed' %}
+                                                <a href="{{ url_for('video_bp.download_report', analysis_id=analysis.id) }}" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-file-pdf me-1"></i> PDF
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-history fa-3x mb-3 text-muted"></i>
+                        <h4>No analysis history</h4>
+                        <p class="text-muted">You haven't analyzed any videos yet.</p>
+                        <a href="{{ url_for('video_bp.dashboard') }}" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus-circle me-1"></i> Analyze a Video
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Convert server-side data to JavaScript
+        const analysesData = [
+            {% for analysis in analyses %}
+                {
+                    id: {{ analysis.id }},
+                    created_at: '{{ analysis.created_at.isoformat() }}',
+                    status: '{{ analysis.status }}',
+                    fraud_score: {{ analysis.fraud_score or 0 }},
+                    video_url: '{{ analysis.video_url }}'
+                },
+            {% endfor %}
+        ];
+        
+        // Initialize chart for history 
+        createHistoryChart('history-chart', analysesData);
+        
+        // Set up filter handlers
+        const statusFilter = document.getElementById('status-filter');
+        const dateFilter = document.getElementById('date-filter');
+        const sortFilter = document.getElementById('sort-filter');
+        
+        if (statusFilter && dateFilter && sortFilter) {
+            statusFilter.addEventListener('change', filterAnalyses);
+            dateFilter.addEventListener('change', filterAnalyses);
+            sortFilter.addEventListener('change', filterAnalyses);
+        }
+        
+        function filterAnalyses() {
+            const status = statusFilter.value;
+            const dateRange = dateFilter.value;
+            const sort = sortFilter.value;
+            
+            const rows = document.querySelectorAll('.analysis-row');
+            
+            // Apply filters and hide/show rows
+            rows.forEach(row => {
+                const rowStatus = row.dataset.status;
+                const rowDate = new Date(row.dataset.date);
+                const rowScore = parseFloat(row.dataset.score);
+                
+                let statusMatch = status === 'all' || status === rowStatus;
+                
+                // Date filtering
+                let dateMatch = true;
+                const today = new Date();
+                if (dateRange === 'today') {
+                    dateMatch = rowDate.toDateString() === today.toDateString();
+                } else if (dateRange === 'week') {
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    dateMatch = rowDate >= weekAgo;
+                } else if (dateRange === 'month') {
+                    const monthAgo = new Date();
+                    monthAgo.setMonth(monthAgo.getMonth() - 1);
+                    dateMatch = rowDate >= monthAgo;
+                }
+                
+                if (statusMatch && dateMatch) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Apply sorting
+            const tableBody = document.getElementById('history-table-body');
+            const rowsArray = Array.from(rows).filter(row => row.style.display !== 'none');
+            
+            rowsArray.sort((a, b) => {
+                if (sort === 'newest') {
+                    return new Date(b.dataset.date) - new Date(a.dataset.date);
+                } else if (sort === 'oldest') {
+                    return new Date(a.dataset.date) - new Date(b.dataset.date);
+                } else if (sort === 'highest') {
+                    return parseFloat(b.dataset.score) - parseFloat(a.dataset.score);
+                } else if (sort === 'lowest') {
+                    return parseFloat(a.dataset.score) - parseFloat(b.dataset.score);
+                }
+            });
+            
+            // Reappend sorted rows
+            rowsArray.forEach(row => {
+                tableBody.appendChild(row);
+            });
+        }
+    });
+</script>
+{% endblock %}

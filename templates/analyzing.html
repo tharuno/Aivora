@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Analyzing Video - Aivora{% endblock %}
+
+{% block content %}
+<div id="analysing-container" data-analysis-id="{{ analysis.id }}">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3 class="mb-0"><i class="fas fa-search me-2"></i>Analyzing Video</h3>
+                </div>
+                <div class="card-body text-center py-5">
+                    <div class="animation-container mb-4">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    
+                    <h4 class="analyzing-text mb-4">
+                        <span id="analysis-status">{{ analysis.status|capitalize }}</span>
+                    </h4>
+                    
+                    <p class="mb-4">We're analyzing the video content for potential fraud indicators</p>
+                    
+                    <div class="progress">
+                        <div id="analysis-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <p class="text-muted mb-1">Video URL:</p>
+                        <p class="fs-6">{{ analysis.video_url }}</p>
+                    </div>
+                </div>
+                <div class="card-footer text-center py-3">
+                    <a href="{{ url_for('video_bp.dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>What We're Doing</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3">
+                                    <i class="fas fa-robot text-primary fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">AI Analysis</h5>
+                                    <p class="text-muted mb-0">Using Gemini API to analyze content</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3">
+                                    <i class="fas fa-eye text-primary fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Computer Vision</h5>
+                                    <p class="text-muted mb-0">Identifying visual deception markers</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3">
+                                    <i class="fas fa-clock text-primary fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Timeline Analysis</h5>
+                                    <p class="text-muted mb-0">Mapping deceptive content by timestamp</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3">
+                                    <i class="fas fa-chart-bar text-primary fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Fraud Scoring</h5>
+                                    <p class="text-muted mb-0">Calculating overall deception probability</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
